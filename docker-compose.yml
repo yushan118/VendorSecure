@@ -1,0 +1,34 @@
+# Development services only. The credentials below are for local use and must never be used in production.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: vendorsecure
+      POSTGRES_USER: vendorsecure
+      POSTGRES_PASSWORD: vendorsecure
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["miniodata:/data"]
+
+  minio-init:            # creates the private "evidence" bucket (buckets are private by default)
+    image: minio/mc
+    depends_on: [minio]
+    entrypoint: >
+      /bin/sh -c "until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 1; done;
+      mc mb --ignore-existing local/evidence; exit 0;"
+
+volumes:
+  pgdata:
+  miniodata:
